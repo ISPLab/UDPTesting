@@ -27,9 +27,19 @@ namespace UdpbrodcastTest
             CancellationTokenSource t_source = new CancellationTokenSource();
             var token = t_source.Token;
             IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-            var ipAddress = ipHostInfo.AddressList.SingleOrDefault(ip => ip.ToString().Contains("192.168."));
-            u_client.Client.Bind(new IPEndPoint(ipAddress, port));
-            Console.WriteLine($"Udp client on {ipAddress}:{port}");
+            try
+            {
+              Console.WriteLine("getting host current host");
+              var ipAddress = ipHostInfo.AddressList.SingleOrDefault(ip => ip.ToString().Contains("192.168."));
+              Console.WriteLine(ipAddress);
+             u_client.Client.Bind(new IPEndPoint(ipAddress, port));
+             Console.WriteLine($"Udp client on {ipAddress}:{port}");
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+
             Task.Run(async () =>
             {
                 int count_message = 1;
