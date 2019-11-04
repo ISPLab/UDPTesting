@@ -19,6 +19,7 @@ namespace UdpbrodcastTest
     class Program
     {
         static ILog logger;
+       static UdpClient u_client;
         static  void Main(string[] args)
         {
             NetworkInterface[] adapters = NetworkInterface.GetAllNetworkInterfaces();
@@ -27,18 +28,20 @@ namespace UdpbrodcastTest
             
           //  WriteXml();
             int port = 4445;
-            UdpClient u_client = new UdpClient();
+      
             SetDefaultLog();
             CancellationTokenSource t_source = new CancellationTokenSource();
             var token = t_source.Token;
-            IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
+           //   IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
             try
             {
               Console.WriteLine("getting host current host");
-              var ipAddress = ipHostInfo.AddressList.SingleOrDefault(ip => ip.ToString().Contains("192.168."));
+              var ipAddress =   "127.0.0.1";//ipHostInfo.AddressList.SingleOrDefault(ip => ip.ToString().Contains("192.168."));
               Console.WriteLine(ipAddress);
-             u_client.Client.Bind(new IPEndPoint(ipAddress, port));
-             Console.WriteLine($"Udp client on {ipAddress}:{port}");
+              var ip= IPAddress.Parse(ipAddress);
+              u_client = new UdpClient();
+              u_client.Client.Bind(new IPEndPoint(ip, 0));
+              Console.WriteLine($"Udp client on {ipAddress}:{port}");
             }
             catch(Exception ex)
             {
@@ -56,7 +59,7 @@ namespace UdpbrodcastTest
                         case "send":
                             logger?.Debug("send operation is runnig");
                             var data2 = Encoding.UTF8.GetBytes($"{count_message} message");
-                            u_client.Send(data2, data2.Length, "192.168.1.255", port);
+                            u_client.Send(data2, data2.Length, "192.168.118.255", port);
                             count_message++;
                             break;
                         case "receive":
