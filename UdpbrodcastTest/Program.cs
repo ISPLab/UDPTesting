@@ -177,12 +177,12 @@ namespace UdpbrodcastTest
             {
                 Console.WriteLine("creating udp sock");
                 IPHostEntry iPHostEntry = Dns.GetHostEntry(Dns.GetHostName());
-                //var ipAddress = "127.0.0.1";
-                var ipAddress = iPHostEntry.AddressList.SingleOrDefault(ip => ip.ToString().Contains("192.168."));
-               // var ip = IPAddress.Parse(ipAddress);
+                var ipAddress = "127.0.0.1";
+                var ip = IPAddress.Parse(ipAddress);
+               // var ipAddress = iPHostEntry.AddressList.SingleOrDefault(ip => ip.ToString().Contains("192.168."));
                 u_client = new UdpClient();
                 u_client.EnableBroadcast = true;
-                u_client.Client.Bind(new IPEndPoint(ipAddress, udp_sock));
+                u_client.Client.Bind(new IPEndPoint(ip, udp_sock));
                 Console.WriteLine($"Udp sock is created on {ipAddress}:{udp_sock}");
             }
             catch (Exception ex)
