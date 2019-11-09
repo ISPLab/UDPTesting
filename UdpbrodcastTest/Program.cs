@@ -40,13 +40,13 @@ namespace UdpbrodcastTest
                         case "send":
                             try
                             {
-
-                            if (u_client == null)
-                                 CreateSock();
-                            Console.WriteLine("send operation is runnig");
+                            Console.WriteLine("creating udp sock for send");
+                            var ipAddress = "127.0.0.1";
+                            var ip = IPAddress.Parse(ipAddress);
+                            u_client = new UdpClient();
+                            u_client.EnableBroadcast = true;
                             var data2 = Encoding.UTF8.GetBytes($"{count_message} message");
-                            u_client.Send(data2, data2.Length, "192.168.118.255", udp_sock);
-
+                            u_client.Send(data2, data2.Length, "255.255.255.255", udp_sock);
                             count_message++;
                             Console.WriteLine($"{count_message} message is sent");
                             }
@@ -59,7 +59,7 @@ namespace UdpbrodcastTest
                             await Task.Run(() =>
                              {
                                  if (u_client == null)
-                                     CreateSock();
+                                     CreateSock(udp_sock);
                                  logger?.Debug("receive operation is runnig");
                                  while (!token.IsCancellationRequested)
                                  {
@@ -171,19 +171,19 @@ namespace UdpbrodcastTest
             }
         }
 
-        public static void CreateSock()
+        public static void CreateSock(int port)
         {
             try
             {
                 Console.WriteLine("creating udp sock");
                 //  IPHostEntry iPHostEntry = Dns.GetHostEntry(Dns.GetHostName());
-                var ipAddress = "127.0.0.1";
-                var ip = IPAddress.Parse(ipAddress);
-               // var ipAddress = iPHostEntry.AddressList.SingleOrDefault(ip => ip.ToString().Contains("192.168."));
+                var ipAddress = IPAddress.Any;// "127.0.0.1";
+                //  var ip = IPAddress.Parse(ipAddress);
+                // var ipAddress = iPHostEntry.AddressList.SingleOrDefault(ip => ip.ToString().Contains("192.168."));
                 u_client = new UdpClient();
                 u_client.EnableBroadcast = true;
-                u_client.Client.Bind(new IPEndPoint(ip, udp_sock));
-                Console.WriteLine($"Udp sock is created on {ipAddress}:{udp_sock}");
+                u_client.Client.Bind(new IPEndPoint(ipAddress, port));
+                Console.WriteLine($"Udp sock is created on {ipAddress}:{port}");
             }
             catch (Exception ex)
             {
