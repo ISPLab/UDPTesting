@@ -31,7 +31,7 @@ namespace UdpbrodcastTest
             var token = t_source.Token;
             Task.Run(async () =>
             {
-                int count_message = 1;
+                int count_message = 0;
                 while (true)
                 {
                     var cmd = Console.ReadLine();
