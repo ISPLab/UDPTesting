@@ -19,35 +19,16 @@ namespace UdpbrodcastTest
     class Program
     {
         static ILog logger;
-       static UdpClient u_client;
-        static  void Main(string[] args)
+        static UdpClient u_client;
+        static int udp_sock = 4445;
+        static void Main(string[] args)
         {
             NetworkInterface[] adapters = NetworkInterface.GetAllNetworkInterfaces();
+            Console.WriteLine("Adapters:");
             foreach (var a in adapters)
-                Console.WriteLine(a.Id);
-            
-          //  WriteXml();
-            int port = 4445;
-      
-            SetDefaultLog();
+               Console.WriteLine($"{a.Id}");
             CancellationTokenSource t_source = new CancellationTokenSource();
             var token = t_source.Token;
-           //   IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-            try
-            {
-              Console.WriteLine("getting host current host");
-              var ipAddress =   "127.0.0.1";//ipHostInfo.AddressList.SingleOrDefault(ip => ip.ToString().Contains("192.168."));
-              Console.WriteLine(ipAddress);
-              var ip= IPAddress.Parse(ipAddress);
-              u_client = new UdpClient();
-              u_client.Client.Bind(new IPEndPoint(ip, 0));
-              Console.WriteLine($"Udp client on {ipAddress}:{port}");
-            }
-            catch(Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
-
             Task.Run(async () =>
             {
                 int count_message = 1;
@@ -57,24 +38,38 @@ namespace UdpbrodcastTest
                     switch (cmd)
                     {
                         case "send":
-                            logger?.Debug("send operation is runnig");
+                            try
+                            {
+
+                            if (u_client == null)
+                                 CreateSock();
+                            Console.WriteLine("send operation is runnig");
                             var data2 = Encoding.UTF8.GetBytes($"{count_message} message");
-                            u_client.Send(data2, data2.Length, "192.168.118.255", port);
+                            u_client.Send(data2, data2.Length, "192.168.118.255", udp_sock);
+
                             count_message++;
+                            Console.WriteLine($"{count_message} message is sent");
+                            }
+                            catch(Exception ex)
+                            {
+                                Console.WriteLine(ex.ToString());
+                            }
                             break;
                         case "receive":
-                           await Task.Run(() =>
-                            {
-                                logger?.Debug("receive operation is runnig");
-                                while (!token.IsCancellationRequested)
-                                {
-                                    var from = new IPEndPoint(0, 0);
-                                    var recvBuffer = u_client.Receive(ref from);
-                                    Console.WriteLine(Encoding.UTF8.GetString(recvBuffer));
-                                    System.Threading.Thread.Sleep(500);
-                                }
-                                u_client.Client.Close();
-                            });
+                            await Task.Run(() =>
+                             {
+                                 if (u_client == null)
+                                     CreateSock();
+                                 logger?.Debug("receive operation is runnig");
+                                 while (!token.IsCancellationRequested)
+                                 {
+                                     var from = new IPEndPoint(0, 0);
+                                     var recvBuffer = u_client.Receive(ref from);
+                                     Console.WriteLine(Encoding.UTF8.GetString(recvBuffer));
+                                     System.Threading.Thread.Sleep(500);
+                                 }
+                                 u_client.Client.Close();
+                             });
                             break;
                         case "set_default_logging":
                             SetDefaultLog();
@@ -97,9 +92,12 @@ namespace UdpbrodcastTest
                         case "set_udp_logging":
                             SetUdpLogging();
                             break;
-                      
+
                         case "set_costom_log":
                             throw new NotImplementedException("set_costom_log");
+                            break;
+                        case "write_log4net_xml":
+                            WriteXml();
                             break;
 
                         case "add_to_log":
@@ -120,7 +118,7 @@ namespace UdpbrodcastTest
                             logger.Error($"Error log message for test");
                             logger.Fatal("Fatal message for test");
                             logger.Info($"Review in another thread");
-                            await   Task.Run(() => {
+                            await Task.Run(() => {
                                 ThreadContext.Stacks["NDC2"].Push("ndc2 message");
                                 log4net.MDC.Set("MDC2", "MDC2 message");
                                 logger.Trace("Anather thread: Trace message for test");
@@ -129,17 +127,17 @@ namespace UdpbrodcastTest
                                 logger.Error($"Anather thread: Error log message for test");
                                 logger.Fatal("Anather thread: Fatal message for test", new InvalidOperationException("Invalid operation Excerption for Test"));
                             });
-                            
+
                             break;
                         case "reader_test":
                             var config = ReadEmbededFile("defaultconsole.config");
 
                             MemoryStream stream = new MemoryStream(config);
                             await SetConfig(stream);
-                            await  TestReader(stream);
-                            
+                            await TestReader(stream);
+
                             break;
-            
+
                         case "stop":
                             t_source.Cancel();
                             return;
@@ -152,27 +150,47 @@ namespace UdpbrodcastTest
             /*  var data = Encoding.UTF8.GetBytes("Test init message");
               u_client.Send(data, data.Length, "255.255.255.255", port);*/
             Console.WriteLine(
-                $"UDP testing: {System.Environment.NewLine}"+
-                $"Print [send] to send test counting message. {System.Environment.NewLine}" +
-                $"Print [receive] to reseive port { System.Environment.NewLine}"+
-                $"Print[stop] to cancel upb prodcasting. { System.Environment.NewLine}"+
-                $"Chainsow testing: {System.Environment.NewLine}" +
-                $"Print [set_default_logging] to set console logging { System.Environment.NewLine}" +
-                $"Print [set_console_logging] to set console logging { System.Environment.NewLine}"+
-                $"Print [set_console_logging_false] to stop console logging { System.Environment.NewLine}" +
-                $"Print [set_udp_logging] add udp appender"+
-           //     $"Print [set_costom_log] to set console logging { System.Environment.NewLine}" +
-                $"Print [add_to_log] to add log something {System.Environment.NewLine}" +
-                $"Print [show_all_verbose] to show all type verbose of Logger"+
-                $"Print [disabale_log] to disable logging { System.Environment.NewLine}"+
-                $"Print [reader_test] for test xml reading configuration file"
+                $"UDP testing commands: {System.Environment.NewLine}" +
+                $"send: to send test counting message. {System.Environment.NewLine}" +
+                $"receive: to reseive port { System.Environment.NewLine}" +
+                $"stop: to cancel upb prodcasting. { System.Environment.NewLine}" +
+                $"set_default_logging: to set console logging { System.Environment.NewLine}" +
+                $"set_console_logging: to set console logging { System.Environment.NewLine}" +
+                $"set_console_logging_false: to stop console logging { System.Environment.NewLine}" +
+                $"set_udp_logging] add udp appender {System.Environment.NewLine}" +
+                $"add_to_log: to add log something {System.Environment.NewLine}" +
+                $"show_all_verbose: to show all type verbose of Logger" +
+                $"disabale_log: to disable logging { System.Environment.NewLine}" +
+                $"reader_test: for test xml reading configuration file {System.Environment.NewLine}" +
+                $"write_log4net_xml (not tested) { System.Environment.NewLine}"
              );
-                 
+
             while (!token.IsCancellationRequested)
             {
                 System.Threading.Thread.Sleep(100);
             }
         }
+
+        public static void CreateSock()
+        {
+            try
+            {
+                Console.WriteLine("creating udp sock");
+                IPHostEntry iPHostEntry = Dns.GetHostEntry(Dns.GetHostName());
+                //var ipAddress = "127.0.0.1";
+                var ipAddress = iPHostEntry.AddressList.SingleOrDefault(ip => ip.ToString().Contains("192.168."));
+               // var ip = IPAddress.Parse(ipAddress);
+                u_client = new UdpClient();
+                u_client.EnableBroadcast = true;
+                u_client.Client.Bind(new IPEndPoint(ipAddress, udp_sock));
+                Console.WriteLine($"Udp sock is created on {ipAddress}:{udp_sock}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+        }
+            
         public static void WriteXml()
         {
             XmlWriterSettings settings = new XmlWriterSettings();
