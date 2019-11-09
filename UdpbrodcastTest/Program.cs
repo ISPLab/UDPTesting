@@ -28,8 +28,17 @@ namespace UdpbrodcastTest
             var token = t_source.Token;
             IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
             var ipAddress = ipHostInfo.AddressList.SingleOrDefault(ip => ip.ToString().Contains("192.168."));
-            u_client.Client.Bind(new IPEndPoint(ipAddress, port));
-            Console.WriteLine($"Udp client on {ipAddress}:{port}");
+            Console.WriteLine(ipAddress);
+            try
+            {
+             u_client.Client.Bind(new IPEndPoint(ipAddress, port));
+             Console.WriteLine($"Udp client on {ipAddress}:{port}");
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+
             Task.Run(async () =>
             {
                 int count_message = 1;
