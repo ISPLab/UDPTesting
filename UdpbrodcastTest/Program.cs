@@ -175,6 +175,7 @@ namespace UdpbrodcastTest
         {
             try
             {
+              
                 Console.WriteLine("creating udp sock");
                 //  IPHostEntry iPHostEntry = Dns.GetHostEntry(Dns.GetHostName());
                 var ipAddress = IPAddress.Any;// "127.0.0.1";
